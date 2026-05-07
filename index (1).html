@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Vacantes · Lau</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a18; --paper: #f5f0e8; --sage: #5c7a5c; --sage-light: #8aaa82;
+    --terra: #b5602a; --mist: #e2dbd0; --gold: #c9a84c; --white: #fdfaf5;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--paper); color:var(--ink); font-family:'DM Sans',sans-serif; font-weight:300; min-height:100vh; }
+
+  header { background:var(--ink); color:var(--paper); padding:2.2rem 3rem 1.8rem; position:relative; overflow:hidden; }
+  header::before { content:''; position:absolute; top:-40px; right:-40px; width:220px; height:220px; border-radius:50%; background:var(--sage); opacity:0.18; pointer-events:none; }
+  header::after  { content:''; position:absolute; bottom:-60px; left:30%; width:300px; height:300px; border-radius:50%; background:var(--terra); opacity:0.1; pointer-events:none; }
+  .header-inner { position:relative; z-index:1; }
+  h1 { font-family:'Playfair Display',serif; font-size:2rem; font-weight:400; letter-spacing:-0.02em; line-height:1.1; }
+  h1 em { font-style:italic; color:var(--sage-light); }
+  .header-sub { margin-top:0.35rem; font-size:0.76rem; opacity:0.5; letter-spacing:0.06em; text-transform:uppercase; }
+  .last-updated { font-size:0.7rem; opacity:0.38; margin-top:0.25rem; font-style:italic; }
+  .keyword-strip { margin-top:1.2rem; display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; }
+  .keyword-strip .label { font-size:0.66rem; opacity:0.38; text-transform:uppercase; letter-spacing:0.08em; margin-right:0.2rem; }
+  .keyword-strip .kw { font-size:0.66rem; letter-spacing:0.06em; text-transform:uppercase; padding:0.18rem 0.6rem; border:1px solid rgba(245,240,232,0.2); border-radius:2px; color:var(--paper); opacity:0.65; }
+
+  main { max-width:1100px; margin:0 auto; padding:2rem 2rem 5rem; }
+  .section-label { font-size:0.66rem; letter-spacing:0.13em; text-transform:uppercase; color:var(--sage); font-weight:500; margin-bottom:0.9rem; padding-bottom:0.45rem; border-bottom:1px solid var(--mist); }
+  .section-group { margin-top:1.1rem; margin-bottom:0.4rem; font-size:0.61rem; text-transform:uppercase; letter-spacing:0.1em; opacity:0.42; }
+
+  .portals-wrap { margin-bottom:2.5rem; }
+  .portals-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:0.55rem; }
+  .portal-card { background:var(--white); border:1px solid var(--mist); padding:0.85rem 1rem; text-decoration:none; color:var(--ink); display:block; position:relative; overflow:hidden; transition:all 0.2s ease; }
+  .portal-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--sage); transform:scaleY(0); transition:transform 0.2s ease; transform-origin:bottom; }
+  .portal-card:hover::before { transform:scaleY(1); }
+  .portal-card:hover { border-color:var(--sage); transform:translateY(-2px); box-shadow:0 4px 16px rgba(92,122,92,0.12); }
+  .portal-name { font-family:'Playfair Display',serif; font-size:0.88rem; font-weight:700; margin-bottom:0.18rem; }
+  .portal-desc { font-size:0.68rem; opacity:0.48; line-height:1.4; }
+  .portal-tag { display:inline-block; font-size:0.56rem; text-transform:uppercase; letter-spacing:0.06em; background:var(--mist); padding:0.1rem 0.38rem; border-radius:1px; margin-top:0.4rem; color:var(--sage); font-weight:500; }
+
+  .saved-panel { background:var(--white); border:1px solid var(--mist); padding:1.2rem 1.4rem; margin-bottom:2rem; }
+  .saved-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.8rem; }
+  .saved-count { font-size:0.78rem; opacity:0.55; font-style:italic; }
+  .saved-empty { font-size:0.78rem; opacity:0.38; font-style:italic; padding:0.4rem 0; }
+  .saved-list { display:flex; flex-direction:column; gap:0.4rem; max-height:220px; overflow-y:auto; }
+  .saved-item { display:flex; align-items:center; gap:0.6rem; font-size:0.76rem; padding:0.35rem 0.5rem; background:var(--paper); border-radius:2px; }
+  .saved-item a { color:var(--sage); text-decoration:none; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .saved-item a:hover { color:var(--terra); }
+  .saved-org { opacity:0.42; font-size:0.66rem; white-space:nowrap; }
+  .saved-deadline { font-size:0.64rem; opacity:0.38; white-space:nowrap; }
+  .saved-deadline.urgent { color:var(--terra); opacity:0.9; }
+  .remove-btn { background:none; border:none; cursor:pointer; opacity:0.28; font-size:0.78rem; padding:0 0.2rem; transition:opacity 0.15s; flex-shrink:0; }
+  .remove-btn:hover { opacity:0.8; color:var(--terra); }
+
+  .search-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+  .search-row input { flex:1; min-width:200px; background:var(--white); border:1px solid var(--mist); padding:0.58rem 1rem; font-family:'DM Sans',sans-serif; font-size:0.84rem; color:var(--ink); outline:none; transition:border-color 0.2s; }
+  .search-row input:focus { border-color:var(--sage); }
+  .search-row input::placeholder { opacity:0.32; }
+
+  .btn { background:var(--sage); color:var(--white); border:none; padding:0.58rem 1.2rem; font-family:'DM Sans',sans-serif; font-size:0.78rem; letter-spacing:0.04em; cursor:pointer; transition:background 0.2s; font-weight:500; }
+  .btn:hover { background:var(--ink); }
+  .btn:disabled { opacity:0.42; cursor:not-allowed; background:var(--sage); }
+  .btn-outline { background:transparent; color:var(--sage); border:1px solid var(--sage); }
+  .btn-outline:hover { background:var(--sage); color:var(--white); }
+  .btn-gold { background:var(--gold); color:var(--ink); border:none; }
+  .btn-gold:hover { background:#b8942a; color:var(--white); }
+
+  .chips { display:flex; flex-wrap:wrap; gap:0.38rem; margin-bottom:0.9rem; }
+  .chip { font-size:0.68rem; padding:0.26rem 0.65rem; border:1px solid var(--sage); background:var(--sage); color:var(--white); cursor:pointer; border-radius:2px; user-select:none; transition:all 0.15s; }
+  .chip:hover { background:var(--terra); border-color:var(--terra); }
+
+  .status { font-size:0.76rem; color:var(--sage); font-style:italic; min-height:1.4em; margin-bottom:0.9rem; display:flex; align-items:center; gap:0.5rem; }
+  .spinner { width:12px; height:12px; border:2px solid var(--mist); border-top-color:var(--sage); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .jobs { display:flex; flex-direction:column; gap:0.65rem; }
+  .job-card { background:var(--white); border:1px solid var(--mist); padding:1.1rem 1.35rem; transition:all 0.2s; animation:fadeUp 0.3s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .job-card:hover { border-color:var(--sage); box-shadow:0 3px 14px rgba(92,122,92,0.1); }
+  .job-card.is-saved { border-left:3px solid var(--gold); }
+  .job-meta { display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem; margin-bottom:0.38rem; }
+  .job-org { font-size:0.66rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--terra); font-weight:500; }
+  .sep { opacity:0.22; font-size:0.58rem; }
+  .job-country { font-size:0.66rem; opacity:0.48; }
+  .job-date { font-size:0.64rem; opacity:0.35; margin-left:auto; font-style:italic; }
+  .job-title { font-family:'Playfair Display',serif; font-size:0.98rem; font-weight:700; line-height:1.3; margin-bottom:0.4rem; }
+  .job-title a { text-decoration:none; color:inherit; }
+  .job-title a:hover { color:var(--sage); }
+  .job-excerpt { font-size:0.76rem; opacity:0.52; line-height:1.6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .job-footer { display:flex; align-items:center; flex-wrap:wrap; gap:0.45rem; margin-top:0.75rem; }
+  .job-type { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.06em; padding:0.16rem 0.5rem; background:var(--mist); color:var(--sage); font-weight:500; }
+  .job-deadline { font-size:0.64rem; opacity:0.4; }
+  .job-deadline.urgent { color:var(--terra); opacity:1; font-weight:500; }
+  .job-link { font-size:0.68rem; color:var(--sage); text-decoration:none; border-bottom:1px solid var(--sage-light); padding-bottom:1px; transition:color 0.15s; }
+  .job-link:hover { color:var(--terra); border-color:var(--terra); }
+  .save-btn { margin-left:auto; font-size:0.68rem; background:none; border:1px solid var(--mist); padding:0.2rem 0.65rem; cursor:pointer; color:var(--ink); transition:all 0.15s; border-radius:2px; font-family:'DM Sans',sans-serif; }
+  .save-btn:hover { border-color:var(--gold); color:var(--gold); }
+  .save-btn.saved { background:var(--gold); color:var(--ink); border-color:var(--gold); }
+
+  .message-box { text-align:center; padding:2.5rem 1rem; opacity:0.4; }
+  .message-box p { font-family:'Playfair Display',serif; font-size:0.95rem; font-style:italic; }
+
+  .pagination { display:flex; gap:0.5rem; align-items:center; justify-content:center; margin-top:1.4rem; flex-wrap:wrap; }
+  .page-info { font-size:0.74rem; opacity:0.42; margin:0 0.4rem; }
+
+  footer { background:var(--ink); color:var(--paper); padding:1.1rem 3rem; font-size:0.68rem; opacity:0.78; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+  footer a { color:var(--sage-light); text-decoration:none; }
+  footer a:hover { color:var(--gold); }
+
+  @media(max-width:640px){
+    header{padding:1.4rem 1.2rem;} h1{font-size:1.65rem;}
+    main{padding:1.4rem 1rem 4rem;} .portals-grid{grid-template-columns:1fr 1fr;} footer{padding:1rem 1.2rem;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Job <em>Monitor</em></h1>
+    <p class="header-sub">Derecho ambiental &amp; Política · LAC Focus</p>
+    <p class="last-updated" id="lastUpdated"></p>
+    <div class="keyword-strip">
+      <span class="label">Keywords:</span>
+      <span class="kw">environmental law</span>
+      <span class="kw">biodiversity</span>
+      <span class="kw">climate change</span>
+      <span class="kw">wetlands</span>
+      <span class="kw">environmental justice</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="section-label">Portales directos — búsquedas pre-filtradas</div>
+  <div class="portals-wrap">
+    <div class="section-group">Sistema ONU</div>
+    <div class="portals-grid" id="gridONU"></div>
+    <div class="section-group">Bancos de desarrollo &amp; cooperación</div>
+    <div class="portals-grid" id="gridBancos"></div>
+    <div class="section-group">ONGs &amp; redes ambientales</div>
+    <div class="portals-grid" id="gridONGs"></div>
+    <div class="section-group">Agregadores especializados</div>
+    <div class="portals-grid" id="gridAgregadores"></div>
+  </div>
+
+  <div class="section-label">Mis vacantes guardadas</div>
+  <div class="saved-panel">
+    <div class="saved-header">
+      <span class="saved-count" id="savedCount">0 vacantes guardadas</span>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <button class="btn btn-gold" onclick="exportarCSV()">⬇ Exportar a Excel (.csv)</button>
+        <button class="btn btn-outline" onclick="limpiarGuardadas()">Limpiar lista</button>
+      </div>
+    </div>
+    <div class="saved-list" id="savedList">
+      <p class="saved-empty">Todavía no guardaste ninguna vacante. Usá el botón "Guardar" en los resultados de ReliefWeb.</p>
+    </div>
+  </div>
+
+  <div class="section-label">ReliefWeb — vacantes en tiempo real</div>
+  <div class="search-row">
+    <input type="text" id="kwInput" placeholder="Agregar keyword y presionar Enter…">
+    <button class="btn" id="searchBtn" onclick="buscar()">Buscar</button>
+    <button class="btn btn-outline" onclick="resetear()">Resetear</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="status" id="status"></div>
+  <div class="jobs" id="jobs"></div>
+  <div class="pagination" id="pagination"></div>
+
+</main>
+
+<footer>
+  <span>Monitor de vacantes · <span id="footerYear"></span></span>
+  <span>
+    <a href="https://reliefweb.int/jobs" target="_blank">ReliefWeb</a> ·
+    <a href="https://jobs.undp.org" target="_blank">UNDP</a> ·
+    <a href="https://hrms.iucn.org/iresy/index.cfm?event=vac.showOpenList" target="_blank">IUCN</a> ·
+    <a href="https://careers.un.org/jobopening?language=en" target="_blank">UN Careers</a>
+  </span>
+</footer>
+
+<script>
+const PORTALES = {
+  ONU: [
+    { name:"UN Careers",   desc:"Secretaría ONU — P y D grades",       url:"https://careers.un.org/jobopening?language=en" },
+    { name:"UNDP Jobs",    desc:"PNUD — vacantes globales y LAC",       url:"https://jobs.undp.org/cj_view_jobs.cfm?q=environment" },
+    { name:"UNEP",         desc:"Programa ONU Medio Ambiente",          url:"https://www.unep.org/work-with-us" },
+    { name:"CEPAL",        desc:"Comisión Económica LAC",               url:"https://www.cepal.org/es/oportunidades-empleo" },
+    { name:"FAO",          desc:"Organización para la Alimentación",    url:"https://jobs.fao.org/careersection/fao_external/jobsearch.ftl?lang=es" },
+    { name:"OEA Consultoría", desc:"OAS — consultoría",                 url:"https://www.oas.org/dhrs/consultancy.htm" },
+    { name:"OEA Empleos",  desc:"OAS — convocatorias careers",          url:"https://phf.tbe.taleo.net/phf01/ats/careers/v2/jobSearch?act=redirectCwsV2&cws=39&org=OAS2" },
+  ],
+  Bancos: [
+    { name:"BID Consultor", desc:"BID — roles consultor LAC",           url:"https://jobs.iadb.org/go/Consultant-Jobs/9638500/" },
+    { name:"Banco Mundial", desc:"World Bank Group careers",            url:"https://worldbankgroup.csod.com/ux/ats/careersite/1/home?c=worldbankgroup" },
+    { name:"GEF",           desc:"Global Environment Facility",         url:"https://www.thegef.org/careers" },
+    { name:"GIZ",           desc:"Cooperación alemana — LAC",           url:"https://jobs.giz.de/index.php?ac=search_result&search_criterion_channel%5B%5D=12" },
+  ],
+  ONGs: [
+    { name:"IUCN / UICN",      desc:"Unión Internacional Conservación", url:"https://hrms.iucn.org/iresy/index.cfm?event=vac.showOpenList" },
+    { name:"IISD",              desc:"Inst. Internacional Des. Sostenible", url:"https://community.iisd.org/" },
+    { name:"TNC",               desc:"The Nature Conservancy",           url:"https://careers.tnc.org/us/en/search-results" },
+    { name:"Oxfam",             desc:"Justicia climática y ambiental",   url:"https://jobs.oxfam.org.uk/?query=environment+climate&location=latin+america" },
+    { name:"Fondo Biocorredor", desc:"Fondo Biocorredor Amazónico",      url:"https://fondobiocorredoramazonico.org/oportunidades/" },
+    { name:"Global Landscape",  desc:"Global Landscapes Forum — consultoría", url:"https://community.globallandscapesforum.org/job/general-call-for-applications-consultant-roster/" },
+    { name:"Rewilding Arg.",    desc:"Rewilding Argentina",              url:"https://rewildingargentina.org/trabaja-con-nosotros/" },
+  ],
+  Agregadores: [
+    { name:"ReliefWeb",   desc:"Principal agregador ONG e IINN",        url:"https://reliefweb.int/jobs?search=environmental+law+biodiversity+climate" },
+    { name:"UN Jobs",     desc:"Agregador vacantes ONU",                url:"https://unjobs.org/" },
+    { name:"DevEx",       desc:"Desarrollo internacional — senior",     url:"https://www.devex.com/jobs/search" },
+    { name:"ImpactPool",  desc:"Sector humanitario y desarrollo",       url:"https://www.impactpool.org/home" },
+    { name:"GreenJobs",   desc:"Empleos verdes — remote friendly",      url:"https://greenjobs.greenjobsearch.org/?s=&location=Remote+&ptype=job_listing" },
+  ]
+};
+
+const KW_DEFAULT = ["environmental law","biodiversity","climate change","wetlands","environmental justice"];
+let keywords = [...KW_DEFAULT];
+let todosLosJobs = [];
+let vacantesGuardadas = cargarGuardadas();
+let pagina = 1;
+const POR_PAGINA = 15;
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderPortales();
+  renderChips();
+  renderGuardadas();
+  buscar();
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    'Actualizado: ' + now.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('footerYear').textContent = now.getFullYear();
+  document.getElementById('kwInput').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const v = e.target.value.trim().toLowerCase();
+    if (v && !keywords.includes(v)) { keywords.push(v); renderChips(); buscar(); }
+    e.target.value = '';
+  });
+});
+
+function renderPortales() {
+  const mk = (id, lista) => {
+    document.getElementById(id).innerHTML = lista.map(p =>
+      `<a class="portal-card" href="${p.url}" target="_blank" rel="noopener noreferrer">
+        <div class="portal-name">${p.name}</div>
+        <div class="portal-desc">${p.desc}</div>
+      </a>`).join('');
+  };
+  mk('gridONU', PORTALES.ONU);
+  mk('gridBancos', PORTALES.Bancos);
+  mk('gridONGs', PORTALES.ONGs);
+  mk('gridAgregadores', PORTALES.Agregadores);
+}
+
+function renderChips() {
+  document.getElementById('chips').innerHTML = keywords.map((kw,i) =>
+    `<span class="chip" onclick="quitarKw(${i})">${kw} ×</span>`).join('');
+}
+function quitarKw(i) {
+  keywords.splice(i,1); renderChips();
+  if (keywords.length) buscar();
+  else { todosLosJobs=[]; setStatus('Agregá al menos una keyword.'); document.getElementById('jobs').innerHTML=''; document.getElementById('pagination').innerHTML=''; }
+}
+function resetear() { keywords=[...KW_DEFAULT]; document.getElementById('kwInput').value=''; renderChips(); buscar(); }
+
+async function buscar() {
+  if (!keywords.length) return;
+  const btn = document.getElementById('searchBtn');
+  btn.disabled=true; pagina=1;
+  setStatus('Buscando en ReliefWeb…', true);
+  document.getElementById('jobs').innerHTML='';
+  document.getElementById('pagination').innerHTML='';
+  try {
+    todosLosJobs = await fetchRW();
+  } catch(e) {
+    console.error(e); todosLosJobs=[];
+    setStatus('⚠ Error conectando con ReliefWeb. Verificá tu conexión.');
+    btn.disabled=false; return;
+  }
+  btn.disabled=false;
+  if (!todosLosJobs.length) { setStatus('No se encontraron vacantes para estos términos.'); return; }
+  setStatus(`${todosLosJobs.length} vacante${todosLosJobs.length!==1?'s':''} encontrada${todosLosJobs.length!==1?'s':''} · ${keywords.join(', ')}`);
+  renderPagina();
+}
+
+async function fetchRW() {
+  const q = encodeURIComponent(keywords.join(' OR '));
+  const url = 'https://api.reliefweb.int/v1/jobs?appname=lau-job-monitor'
+    + '&query[value]=' + q
+    + '&query[fields][]=title&query[fields][]=body'
+    + '&filter[field]=status&filter[value]=open'
+    + '&fields[include][]=title&fields[include][]=body'
+    + '&fields[include][]=date.created&fields[include][]=date.closing'
+    + '&fields[include][]=country&fields[include][]=source&fields[include][]=type'
+    + '&sort[]=date.created:desc&limit=100';
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  return data.data || [];
+}
+
+function renderPagina() {
+  const start = (pagina-1)*POR_PAGINA;
+  const slice = todosLosJobs.slice(start, start+POR_PAGINA);
+  const container = document.getElementById('jobs');
+  if (!slice.length) { container.innerHTML='<div class="message-box"><p>Sin resultados en esta página.</p></div>'; renderPaginacion(); return; }
+  container.innerHTML = slice.map((job,i) => {
+    const f = job.fields;
+    const titulo = f.title||'Sin título';
+    const org    = f.source?.[0]?.name||'—';
+    const pais   = f.country?.[0]?.name||'Global / Remoto';
+    const tipo   = f.type?.[0]?.name||'';
+    const creado = f['date.created'] ? fmtFecha(f['date.created']) : '';
+    const cierre = f['date.closing']||null;
+    const cuerpo = f.body ? stripHtml(f.body).slice(0,200)+'…' : '';
+    const url    = 'https://reliefweb.int/job/'+job.id;
+    const urgente = cierre && diasRestantes(cierre)<=7 && diasRestantes(cierre)>=0;
+    const guardada = vacantesGuardadas.some(v=>v.id===job.id);
+    const tSafe  = titulo.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const oSafe  = org.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `
+      <div class="job-card${guardada?' is-saved':''}" id="card-${job.id}" style="animation-delay:${i*0.03}s">
+        <div class="job-meta">
+          <span class="job-org">${org}</span><span class="sep">●</span>
+          <span class="job-country">${pais}</span>
+          ${creado?`<span class="job-date">${creado}</span>`:''}
+        </div>
+        <div class="job-title"><a href="${url}" target="_blank" rel="noopener">${titulo}</a></div>
+        ${cuerpo?`<div class="job-excerpt">${cuerpo}</div>`:''}
+        <div class="job-footer">
+          ${tipo?`<span class="job-type">${tipo}</span>`:''}
+          ${cierre?`<span class="job-deadline${urgente?' urgent':''}">${urgente?'⚠ ':''}Cierre: ${fmtFecha(cierre)}${urgente?' ('+diasRestantes(cierre)+' días)':''}</span>`:''}
+          <a class="job-link" href="${url}" target="_blank" rel="noopener">Ver →</a>
+          <button class="save-btn${guardada?' saved':''}" id="savebtn-${job.id}"
+            onclick="toggleGuardar('${job.id}','${tSafe}','${oSafe}','${url}','${cierre||''}')">
+            ${guardada?'★ Guardada':'☆ Guardar'}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+  renderPaginacion();
+}
+
+function toggleGuardar(id, titulo, org, url, cierre) {
+  const idx = vacantesGuardadas.findIndex(v=>v.id===id);
+  if (idx>=0) { vacantesGuardadas.splice(idx,1); }
+  else { vacantesGuardadas.push({id, titulo, org, url, cierre, guardadaEl:new Date().toISOString().slice(0,10)}); }
+  guardarEnStorage(); renderGuardadas();
+  const ahora = vacantesGuardadas.some(v=>v.id===id);
+  const card = document.getElementById('card-'+id);
+  const btn  = document.getElementById('savebtn-'+id);
+  if (card) card.classList.toggle('is-saved', ahora);
+  if (btn)  { btn.textContent=ahora?'★ Guardada':'☆ Guardar'; btn.classList.toggle('saved',ahora); }
+}
+
+function renderGuardadas() {
+  const lista = document.getElementById('savedList');
+  const count = document.getElementById('savedCount');
+  count.textContent = `${vacantesGuardadas.length} vacante${vacantesGuardadas.length!==1?'s':''} guardada${vacantesGuardadas.length!==1?'s':''}`;
+  if (!vacantesGuardadas.length) {
+    lista.innerHTML='<p class="saved-empty">Todavía no guardaste ninguna vacante. Usá el botón "Guardar" en los resultados de ReliefWeb.</p>';
+    return;
+  }
+  lista.innerHTML = vacantesGuardadas.map(v => {
+    const urgente = v.cierre && diasRestantes(v.cierre)<=7 && diasRestantes(v.cierre)>=0;
+    return `<div class="saved-item">
+      <a href="${v.url}" target="_blank" rel="noopener" title="${v.titulo}">${v.titulo}</a>
+      <span class="saved-org">${v.org}</span>
+      ${v.cierre?`<span class="saved-deadline${urgente?' urgent':''}">⏱ ${fmtFecha(v.cierre)}</span>`:''}
+      <button class="remove-btn" onclick="toggleGuardar('${v.id}','','','','')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function limpiarGuardadas() {
+  if (!vacantesGuardadas.length) return;
+  if (!confirm('¿Limpiar todas las vacantes guardadas?')) return;
+  vacantesGuardadas=[]; guardarEnStorage(); renderGuardadas(); renderPagina();
+}
+
+function exportarCSV() {
+  if (!vacantesGuardadas.length) { alert('No hay vacantes guardadas para exportar.'); return; }
+  const header = ['Título','Organización','Fecha cierre','Guardada el','Enlace para aplicar'];
+  const rows = vacantesGuardadas.map(v => [
+    '"'+v.titulo.replace(/"/g,'""')+'"',
+    '"'+(v.org||'').replace(/"/g,'""')+'"',
+    v.cierre ? fmtFecha(v.cierre) : '—',
+    v.guardadaEl||'—',
+    v.url
+  ]);
+  const csv = [header,...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vacantes_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function cargarGuardadas() {
+  try { return JSON.parse(localStorage.getItem('lau_vacantes')||'[]'); } catch { return []; }
+}
+function guardarEnStorage() {
+  try { localStorage.setItem('lau_vacantes',JSON.stringify(vacantesGuardadas)); } catch(e) { console.warn(e); }
+}
+
+function renderPaginacion() {
+  const total = Math.ceil(todosLosJobs.length/POR_PAGINA);
+  const pg = document.getElementById('pagination');
+  if (total<=1) { pg.innerHTML=''; return; }
+  pg.innerHTML = `
+    <button class="btn btn-outline" onclick="irPagina(${pagina-1})" ${pagina===1?'disabled':''}>← Anterior</button>
+    <span class="page-info">Página ${pagina} de ${total}</span>
+    <button class="btn btn-outline" onclick="irPagina(${pagina+1})" ${pagina===total?'disabled':''}>Siguiente →</button>`;
+}
+function irPagina(n) {
+  const total=Math.ceil(todosLosJobs.length/POR_PAGINA);
+  if(n<1||n>total) return; pagina=n; renderPagina();
+  window.scrollTo({top:400,behavior:'smooth'});
+}
+
+function setStatus(msg, cargando=false) {
+  const el=document.getElementById('status');
+  el.className='status';
+  el.innerHTML=cargando?`<span class="spinner"></span>${msg}`:msg;
+}
+function fmtFecha(str) { return new Date(str).toLocaleDateString('es-AR',{day:'numeric',month:'short',year:'numeric'}); }
+function diasRestantes(str) { return Math.ceil((new Date(str)-new Date())/86400000); }
+function stripHtml(html) { const d=document.createElement('div'); d.innerHTML=html; return d.textContent||d.innerText||''; }
+</script>
+</body>
+</html>
