@@ -65,6 +65,9 @@
   .btn-outline:hover { background:var(--sage); color:var(--white); }
   .btn-gold { background:var(--gold); color:var(--ink); border:none; }
   .btn-gold:hover { background:#b8942a; color:var(--white); }
+  /* ── nuevo botón Sheet ── */
+  .btn-sheet { background:#1a6e3c; color:#fff; border:none; padding:0.58rem 1.2rem; font-family:'DM Sans',sans-serif; font-size:0.78rem; letter-spacing:0.04em; cursor:pointer; transition:background 0.2s; font-weight:500; text-decoration:none; display:inline-flex; align-items:center; gap:0.4rem; }
+  .btn-sheet:hover { background:#145530; }
 
   .chips { display:flex; flex-wrap:wrap; gap:0.38rem; margin-bottom:0.9rem; }
   .chip { font-size:0.68rem; padding:0.26rem 0.65rem; border:1px solid var(--sage); background:var(--sage); color:var(--white); cursor:pointer; border-radius:2px; user-select:none; transition:all 0.15s; }
@@ -150,7 +153,12 @@
   <div class="saved-panel">
     <div class="saved-header">
       <span class="saved-count" id="savedCount">0 vacantes guardadas</span>
-      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <a class="btn-sheet"
+           href="https://docs.google.com/spreadsheets/d/1jo9DafZvd-Rww-Du4HtR-gKVBpUO2FSc/edit?gid=1161864251#gid=1161864251"
+           target="_blank" rel="noopener noreferrer">
+          📊 Sheet de vacantes
+        </a>
         <button class="btn btn-gold" onclick="exportarCSV()">⬇ Exportar a Excel (.csv)</button>
         <button class="btn btn-outline" onclick="limpiarGuardadas()">Limpiar lista</button>
       </div>
